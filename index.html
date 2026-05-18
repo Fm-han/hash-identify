@@ -1,95 +1,152 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>鍝堝笇绫诲瀷璇嗗埆鍣?/title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:20px;min-height:100vh}
-.container{max-width:650px;margin:0 auto}
-h1{text-align:center;color:#333;margin-bottom:24px;font-size:22px}
-.card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:24px;margin-bottom:16px}
-label{display:block;font-weight:600;margin-bottom:6px;color:#555;font-size:14px}
-input[type="text"]{width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box;font-family:monospace}
-.btn{background:#007bff;color:#fff;border:none;padding:8px 20px;border-radius:4px;cursor:pointer;font-size:14px;margin-top:8px}
-.btn:hover{background:#0056b3}
-.btn-green{background:#28a745}
-.btn-green:hover{background:#218838}
-.result{margin-top:16px}
-.hash-type{padding:12px;border-radius:6px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
-.hash-type .confidence{font-size:12px;padding:3px 8px;border-radius:12px;font-weight:600}
-.high{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
-.medium{background:#fff3cd;color:#856404;border:1px solid #ffeaa7}
-.low{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
-.hash-type .name{font-weight:600;font-size:15px}
-.hash-type .desc{font-size:13px;color:#666;margin-top:2px}
-.not-found{text-align:center;padding:20px;color:#999;font-size:15px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈希类型识别器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #fafafa; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; color: #333; }
+        .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: monospace; }
+        textarea { min-height: 80px; resize: vertical; }
+        .btn { padding: 8px 20px; border-radius: 4px; cursor: pointer; border: none; font-size: 14px; margin-right: 8px; }
+        .btn-blue { background: #007bff; color: #fff; }
+        .btn-gray { background: #6c757d; color: #fff; }
+        .result { background: #f5f5f5; padding: 16px; border-radius: 4px; margin-top: 16px; }
+        .result-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
+        .result-item:last-child { border-bottom: none; }
+        .result-label { color: #666; }
+        .result-value { font-weight: 500; color: #007bff; }
+        .match { background: #d4edda; color: #155724; padding: 12px; border-radius: 4px; margin-top: 12px; }
+        .no-match { background: #fff3cd; color: #856404; padding: 12px; border-radius: 4px; margin-top: 12px; }
+        .hash-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .hash-tag { padding: 6px 12px; background: #e9ecef; border-radius: 4px; font-size: 13px; }
+    </style>
 </head>
 <body>
-<div class="container">
-<h1>鍝堝笇绫诲瀷璇嗗埆鍣?/h1>
-<div class="card">
-<label>杈撳叆鍝堝笇鍊?/label>
-<input type="text" id="hashInput" placeholder="杈撳叆瑕佽瘑鍒殑鍝堝笇鍊硷紙MD5, SHA1, SHA256绛夛級">
-<button class="btn" onclick="identify()">璇嗗埆鍝堝笇绫诲瀷</button>
-<div class="result" id="result"></div>
-</div>
-</div>
-<script>
-const hashTypes=[
-{name:'MD5',length:32,chars:'hex',desc:'128浣嶅搱甯屽€硷紝甯哥敤浜庢牎楠屾枃浠跺畬鏁存€?},
-{name:'SHA-1',length:40,chars:'hex',desc:'160浣嶅搱甯屽€硷紝宸茶鍙戠幇瀛樺湪纰版挒婕忔礊'},
-{name:'SHA-224',length:56,chars:'hex',desc:'224浣峉HA-2绯诲垪鍝堝笇鍊?},
-{name:'SHA-256',length:64,chars:'hex',desc:'256浣峉HA-2绯诲垪鍝堝笇鍊硷紝鐩墠鏈€甯哥敤'},
-{name:'SHA-384',length:96,chars:'hex',desc:'384浣峉HA-2绯诲垪鍝堝笇鍊?},
-{name:'SHA-512',length:128,chars:'hex',desc:'512浣峉HA-2绯诲垪鍝堝笇鍊?},
-{name:'SHA3-224',length:56,chars:'hex',desc:'224浣峉HA-3绯诲垪鍝堝笇鍊?},
-{name:'SHA3-256',length:64,chars:'hex',desc:'256浣峉HA-3绯诲垪鍝堝笇鍊?},
-{name:'SHA3-384',length:96,chars:'hex',desc:'384浣峉HA-3绯诲垪鍝堝笇鍊?},
-{name:'SHA3-512',length:128,chars:'hex',desc:'512浣峉HA-3绯诲垪鍝堝笇鍊?},
-{name:'BLAKE2s',length:64,chars:'hex',desc:'256浣岯LAKE2s鍝堝笇鍊?},
-{name:'BLAKE2b',length:128,chars:'hex',desc:'512浣岯LAKE2b鍝堝笇鍊?},
-{name:'RIPEMD-160',length:40,chars:'hex',desc:'160浣峈IPEMD鍝堝笇鍊?},
-{name:'NTLM',length:32,chars:'hex',desc:'Windows NTLM瀵嗙爜鍝堝笇'},
-{name:'MySQL4',length:16,chars:'hex',desc:'MySQL 4.1涔嬪墠鐗堟湰瀵嗙爜鍝堝笇'},
-{name:'CRC32',length:8,chars:'hex',desc:'32浣嶅惊鐜啑浣欐牎楠?},
-{name:'Adler-32',length:8,chars:'dec',desc:'32浣嶆牎楠屽拰绠楁硶'},
-{name:'Base64',length:0,chars:'base64',desc:'Base64缂栫爜瀛楃涓诧紙闈炲搱甯岋級'},
-{name:'Base32',length:0,chars:'base32',desc:'Base32缂栫爜瀛楃涓诧紙闈炲搱甯岋級'},
-];
-function identify(){
-const input=document.getElementById('hashInput').value.trim();
-if(!input){document.getElementById('result').innerHTML='<div class="not-found">璇疯緭鍏ュ搱甯屽€?/div>';return}
-const results=[];
-const len=input.length;
-const isHex=/^[0-9a-fA-F]+$/.test(input);
-const isBase64=/^[A-Za-z0-9+/]+=*$/.test(input)&&len%4===0;
-const isBase32=/^[A-Z2-7]+=*$/.test(input);
-hashTypes.forEach(ht=>{
-let score=0;
-if(ht.chars==='hex'&&isHex&&ht.length===len)score=95;
-else if(ht.chars==='base64'&&isBase64)score=70;
-else if(ht.chars==='base32'&&isBase32)score=70;
-else if(ht.chars==='hex'&&isHex&&len%2===0){
-const diff=Math.abs(ht.length-len);
-if(diff===0)score=95;
-else if(diff<=4)score=40;
-else if(diff<=8)score=20;
-}
-if(score>0)results.push({...ht,score});
-});
-results.sort((a,b)=>b.score-a.score);
-const div=document.getElementById('result');
-if(!results.length){div.innerHTML='<div class="not-found">鏈兘璇嗗埆璇ュ搱甯岀被鍨?/div>';return}
-div.innerHTML=results.map(r=>{
-const cls=r.score>=80?'high':r.score>=50?'medium':'low';
-const label=r.score>=80?'楂樼疆淇″害':r.score>=50?'涓瓑缃俊搴?:'浣庣疆淇″害';
-return `<div class="hash-type"><span class="confidence ${cls}">${label} ${r.score}%</span><div><div class="name">${r.name}</div><div class="desc">${r.desc}</div></div></div>`;
-}).join('');
-}
-document.getElementById('hashInput').addEventListener('keydown',e=>{if(e.key==='Enter')identify()});
-</script>
+    <div class="container">
+        <h1>哈希类型识别器</h1>
+        <div class="card">
+            <div class="form-group">
+                <label>输入哈希值</label>
+                <input type="text" id="hashInput" placeholder="粘贴哈希值，如：5e884898da28047...">
+            </div>
+            <div class="form-group">
+                <label>或选择常见哈希示例</label>
+                <div class="hash-list">
+                    <button class="hash-tag" onclick="loadSample('md5')">MD5</button>
+                    <button class="hash-tag" onclick="loadSample('sha1')">SHA-1</button>
+                    <button class="hash-tag" onclick="loadSample('sha256')">SHA-256</button>
+                    <button class="hash-tag" onclick="loadSample('sha512')">SHA-512</button>
+                    <button class="hash-tag" onclick="loadSample('bcrypt')">bcrypt</button>
+                    <button class="hash-tag" onclick="loadSample('argon2')">argon2</button>
+                </div>
+            </div>
+            <button class="btn btn-blue" onclick="identify()">识别类型</button>
+            <button class="btn btn-gray" onclick="clearAll()">清空</button>
+        </div>
+        <div class="card">
+            <div class="result" id="result" style="display:none;">
+                <div class="result-item">
+                    <span class="result-label">输入长度</span>
+                    <span class="result-value" id="length"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">字符类型</span>
+                    <span class="result-value" id="charType"></span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">可能类型</span>
+                    <span class="result-value" id="possible"></span>
+                </div>
+            </div>
+            <div id="matchResult"></div>
+        </div>
+        <div class="card">
+            <label>常见哈希长度参考</label>
+            <div class="result">
+                <div class="result-item"><span class="result-label">MD5</span><span class="result-value">32 字符 (128 bits)</span></div>
+                <div class="result-item"><span class="result-label">SHA-1</span><span class="result-value">40 字符 (160 bits)</span></div>
+                <div class="result-item"><span class="result-label">SHA-256</span><span class="result-value">64 字符 (256 bits)</span></div>
+                <div class="result-item"><span class="result-label">SHA-384</span><span class="result-value">96 字符 (384 bits)</span></div>
+                <div class="result-item"><span class="result-label">SHA-512</span><span class="result-value">128 字符 (512 bits)</span></div>
+                <div class="result-item"><span class="result-label">bcrypt</span><span class="result-value">60 字符，以 $2a$/2b$/2y$ 开头</span></div>
+                <div class="result-item"><span class="result-label">argon2</span><span class="result-value">以 $argon2 开头</span></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const samples = {
+            md5: '5e884898da28047d649e13fb34d49e42',
+            sha1: '2fd4e1c67a2d28fced849ee1bb76e7391b93eb12',
+            sha256: 'a591a6d40fa6823a1e80f4e1d45a6f4e7c8b1a2e3f4a5b6c7d8e9f0a1b2c3d4e5',
+            sha512: 'cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e',
+            bcrypt: '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3.rsA/',
+            argon2: '$argon2id$v=19$m=65536,t=3,p=4$YWJjZGVmZ2hpamtsbW5vcA$YDzJU1P9TWvdWHPPxMQ5'
+        };
+        
+        const hashes = [
+            { name: 'MD5', length: 32, pattern: /^[a-f0-9]{32}$/i },
+            { name: 'SHA-1', length: 40, pattern: /^[a-f0-9]{40}$/i },
+            { name: 'SHA-256', length: 64, pattern: /^[a-f0-9]{64}$/i },
+            { name: 'SHA-384', length: 96, pattern: /^[a-f0-9]{96}$/i },
+            { name: 'SHA-512', length: 128, pattern: /^[a-f0-9]{128}$/i },
+            { name: 'NTLM', length: 32, pattern: /^[a-f0-9]{32}$/i },
+            { name: 'MySQL5', length: 40, pattern: /^\*[A-F0-9]{40}$/i },
+            { name: 'bcrypt', pattern: /^\$2[aby]?\$\d{1,2}\$[./A-Za-z0-9]{53}$/ },
+            { name: 'argon2', pattern: /^\$argon2(id|i|m)\$/ },
+            { name: 'PBKDF2', pattern: /^pbkdf2:sha\d+:\d+\$/i },
+            { name: 'scrypt', pattern: /^scrypt\$/ },
+            { name: 'whirlpool', length: 128, pattern: /^[a-f0-9]{128}$/i }
+        ];
+        
+        function loadSample(type) {
+            document.getElementById('hashInput').value = samples[type];
+            identify();
+        }
+        
+        function identify() {
+            const hash = document.getElementById('hashInput').value.trim();
+            if (!hash) {
+                alert('请输入哈希值');
+                return;
+            }
+            
+            const length = hash.length;
+            const isHex = /^[a-f0-9]+$/i.test(hash);
+            const isBase64 = /^[A-Za-z0-9+/]+=*$/.test(hash);
+            
+            document.getElementById('length').textContent = length + ' 字符';
+            document.getElementById('charType').textContent = isHex ? '十六进制' : (isBase64 ? 'Base64' : '其他');
+            document.getElementById('result').style.display = 'block';
+            
+            // Find matching types
+            const matches = hashes.filter(h => {
+                if (h.pattern) return h.pattern.test(hash);
+                return h.length === length && isHex;
+            });
+            
+            const possibleNames = matches.map(m => m.name);
+            document.getElementById('possible').textContent = possibleNames.length ? possibleNames.join(', ') : '未知';
+            
+            const resultDiv = document.getElementById('matchResult');
+            if (matches.length > 0) {
+                resultDiv.innerHTML = `<div class="match">识别到可能的哈希类型：<strong>${possibleNames.join(', ')}</strong></div>`;
+            } else {
+                resultDiv.innerHTML = `<div class="no-match">无法识别该哈希类型，可能不是标准哈希或格式特殊</div>`;
+            }
+        }
+        
+        function clearAll() {
+            document.getElementById('hashInput').value = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('matchResult').innerHTML = '';
+        }
+    </script>
 </body>
 </html>
